@@ -7,6 +7,8 @@
 
 namespace IDCI\Bundle\StepBundle\Configuration\Builder;
 
+use Symfony\Component\Security\Core\SecurityContextInterface;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use IDCI\Bundle\StepBundle\Map\MapBuilderFactoryInterface;
 use IDCI\Bundle\StepBundle\Configuration\Worker\ConfigurationWorkerRegistryInterface;
 
@@ -19,6 +21,20 @@ class MapConfigurationBuilder implements MapConfigurationBuilderInterface
      */
     protected $mapBuilderFactory;
 
+    /**
+     * @var \Twig_Environment
+     */
+    private $merger;
+
+    /**
+     * @var SecurityContextInterface
+     */
+    private $securityContext;
+
+    /**
+     * @var SessionInterface
+     */
+    private $session;
 
     /**
      * The configuration worker registry.
@@ -32,14 +48,23 @@ class MapConfigurationBuilder implements MapConfigurationBuilderInterface
      *
      * @param MapBuilderFactoryInterface           $mapBuilderFactory The map builder factory.
      * @param ConfigurationWorkerRegistryInterface $workerRegistry    The configuration worker registry.
+     * @param Twig_Environment                     $merger            The twig merger.
+     * @param SecurityContextInterface             $securityContext   The security context.
+     * @param SessionInterface                     $session           The session.
      */
     public function __construct(
         MapBuilderFactoryInterface $mapBuilderFactory,
-        ConfigurationWorkerRegistryInterface $workerRegistry
+        ConfigurationWorkerRegistryInterface $workerRegistry,
+        \Twig_Environment $merger,
+        SecurityContextInterface $securityContext,
+        SessionInterface $session
     )
     {
         $this->mapBuilderFactory = $mapBuilderFactory;
-        $this->workerRegistry = $workerRegistry;
+        $this->workerRegistry    = $workerRegistry;
+        $this->merger            = $merger;
+        $this->securityContext   = $securityContext;
+        $this->session           = $session;
     }
 
     /**
@@ -61,7 +86,7 @@ class MapConfigurationBuilder implements MapConfigurationBuilderInterface
                 $builder->addStep(
                     $name,
                     $step['type'],
-                    $this->buildOptions($step)
+                    $this->buildOptions($this->merge($step))
                 );
             }
         }
@@ -103,6 +128,49 @@ class MapConfigurationBuilder implements MapConfigurationBuilderInterface
             } else if (is_array($option)) {
                 $options[$key] = $this->buildOptions($option, null);
             }
+        }
+
+        return $options;
+    }
+
+    /**
+     * Merge options with the SecurityContext (user)
+     * and the session (session).
+     *
+     * @param array $options The options.
+     *
+     * @return array
+     */
+    protected function merge(array $options = array())
+    {
+        $user = null;
+        if (null !== $this->securityContext->getToken()) {
+            $user = $this->securityContext->getToken()->getUser();
+        }
+
+        foreach ($options as $k => $v) {
+            // Do not merge events parameters.
+            if ($k == 'events') {
+                continue;
+            }
+
+            // If ending with '|raw'
+            if (substr($k, -4) == '|raw') {
+                $options[substr($k, 0, -4)] = $options[$k];
+                unset($options[$k]);
+                continue;
+            }
+
+            $options[$k] = json_decode(
+                $this->merger->render(
+                    json_encode($v, JSON_UNESCAPED_UNICODE),
+                    array(
+                        'user'    => $user,
+                        'session' => $this->session->all(),
+                    )
+                ),
+                true
+            );
         }
 
         return $options;

@@ -26,42 +26,18 @@ class MapBuilderFactory implements MapBuilderFactoryInterface
     private $pathBuilder;
 
     /**
-     * @var \Twig_Environment
-     */
-    private $merger;
-
-    /**
-     * @var SecurityContextInterface
-     */
-    private $securityContext;
-
-    /**
-     * @var SessionInterface
-     */
-    private $session;
-
-    /**
      * Constructor
      *
      * @param StepBuilderInterface     $stepBuilder     The step builder.
      * @param PathBuilderInterface     $pathBuilder     The path builder.
-     * @param Twig_Environment         $merger          The twig merger.
-     * @param SecurityContextInterface $securityContext The security context.
-     * @param SessionInterface         $session         The session.
      */
     public function __construct(
         StepBuilderInterface     $stepBuilder,
-        PathBuilderInterface     $pathBuilder,
-        \Twig_Environment        $merger,
-        SecurityContextInterface $securityContext,
-        SessionInterface         $session
+        PathBuilderInterface     $pathBuilder
     )
     {
         $this->stepBuilder     = $stepBuilder;
         $this->pathBuilder     = $pathBuilder;
-        $this->merger          = $merger;
-        $this->securityContext = $securityContext;
-        $this->session         = $session;
     }
 
     /**
@@ -82,10 +58,7 @@ class MapBuilderFactory implements MapBuilderFactoryInterface
             $data,
             $options,
             $this->stepBuilder,
-            $this->pathBuilder,
-            $this->merger,
-            $this->securityContext,
-            $this->session
+            $this->pathBuilder
         );
     }
 }

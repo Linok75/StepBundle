@@ -70,9 +70,6 @@ services:
         arguments:
             - @idci_step.step.builder
             - @idci_step.path.builder
-            - @idci_step.twig
-            - @security.context
-            - @session
 
     idci_step.navigator.factory:
         class: %idci_step.navigator.factory.class%
@@ -170,6 +167,9 @@ services:
         arguments:
             - @idci_step.map.builder.factory
             - @idci_step.configuration.worker_registry
+            - @idci_step.twig
+            - @security.context
+            - @session
 
     idci_step.configuration.worker_registry:
         class: %idci_step.configuration.worker_registry.class%
